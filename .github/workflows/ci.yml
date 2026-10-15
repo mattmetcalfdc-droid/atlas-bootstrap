@@ -1,0 +1,16 @@
+# gitleaks only (seeded from Cloudflare-HQ/_template). This public repo must never hold a secret - CI proves it on
+# every push, on top of the gitleaks pre-commit hook.
+name: CI
+on: [push]
+permissions:
+  contents: read
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

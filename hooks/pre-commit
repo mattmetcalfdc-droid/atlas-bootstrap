@@ -1,0 +1,14 @@
+#!/bin/sh
+# gitleaks pre-commit hook — blocks commits whose staged changes contain secrets.
+# INSTALL (hooks are not versioned — redo after every fresh clone, before the
+# first commit):  Copy-Item hooks\pre-commit .git\hooks\pre-commit
+if command -v gitleaks >/dev/null 2>&1; then GL=gitleaks
+elif [ -x "$LOCALAPPDATA/Microsoft/WinGet/Packages/Gitleaks.Gitleaks_Microsoft.Winget.Source_8wekyb3d8bbwe/gitleaks.exe" ]; then GL="$LOCALAPPDATA/Microsoft/WinGet/Packages/Gitleaks.Gitleaks_Microsoft.Winget.Source_8wekyb3d8bbwe/gitleaks.exe"
+else echo "pre-commit: gitleaks not found — install with: winget install Gitleaks.Gitleaks" >&2; exit 1; fi
+"$GL" git --pre-commit --staged --no-banner --redact=90
+rc=$?
+if [ $rc -ne 0 ]; then
+  echo "" >&2; echo "COMMIT BLOCKED by gitleaks (see above). Remove the secret and re-stage." >&2
+  echo "Only for a verified false positive: add an allowlist entry to .gitleaks.toml (preferred) or use --no-verify." >&2
+  exit 1
+fi
