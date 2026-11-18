@@ -188,6 +188,19 @@ Write-Host '   Sign in to your Google profile, click "Add to Chrome" on the Clau
 Write-Host '   Cloudflare, AWS, Telnyx, Stripe dashboards: sign in when you need them, each from 1Password.'
 Pause-For 'Chrome is signed in (or skip and do it later).'
 
+# ---------- 7b. nightly backup task ----------
+Step '7b. Register the nightly backup task'
+# backup.ps1 -Register resolves a stable pwsh launcher (C:\Program Files\PowerShell\7\pwsh.exe, else the
+# version-independent %LOCALAPPDATA%\Microsoft\WindowsApps\pwsh.exe) and refuses a versioned Store path, which a
+# PowerShell update deletes (the 2026-11-18 failure, 0x80070002).
+$script:taskOk = $false
+Act ('pwsh -File ' + $Backup + '\backup.ps1 -Register') {
+  & pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Backup 'backup.ps1') -Register
+  $t = Get-ScheduledTask -TaskName 'Atlas Logic workstation backup' -ErrorAction SilentlyContinue
+  $script:taskOk = [bool]($t -and ($t.Actions[0].Execute -notmatch '\\WindowsApps\\Microsoft\.PowerShell_'))
+}
+Note 'Nightly backup task' ($script:taskOk -or $DryRun) $(if ($script:taskOk) { 'registered' } elseif ($DryRun) { '(dry run)' } else { 'not registered - run backup.ps1 -Register' })
+
 # ---------- 8. preflight ----------
 Step '8. Preflight'
 $script:green = $false
@@ -207,4 +220,4 @@ foreach ($r in $script:Results) {
 Log 'DONE'
 Write-Host ''
 Write-Host 'Close this window and open a new PowerShell (so it picks up the token), then:' -ForegroundColor Green
-Write-Host 'Open Claude in C:\dev\Cloudflare-HQ and say: Laptop was replaced, re-register the backup task and tell me where every project stands.' -ForegroundColor Green
+Write-Host 'Open Claude in C:\dev\Cloudflare-HQ and say: Laptop was replaced, check the backup task and tell me where every project stands.' -ForegroundColor Green
